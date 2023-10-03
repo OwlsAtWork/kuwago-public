@@ -89,6 +89,7 @@ class Query(
     sql_editor_id = Column(String(256))
     schema = Column(String(256))
     sql = Column(Text)
+    nl_query = Column(Text)
     # Query to retrieve the results,
     # used only in case of select_as_cta_used is true.
     select_sql = Column(Text)
