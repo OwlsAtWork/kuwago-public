@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""add nl_query coloumn to the query
+"""add nl_query column to the query
 
 Revision ID: 187d6195ab53
 Revises: cf754ef8ab74
