@@ -24,8 +24,7 @@ class AIClient:
             "database_schema": database_schema,
             "database_type": database_type,
         }
-        response = requests.post(
-            url, json=data, headers=AIClient._DEFAULT_HEADERS)
+        response = requests.post(url, json=data, headers=AIClient._DEFAULT_HEADERS)
         if response.status_code != 200:
             if response.headers["Content-Type"] == "application/json":
                 raise Exception(response.json())
