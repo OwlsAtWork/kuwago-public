@@ -34,6 +34,7 @@ from superset.sql_lab import get_sql_query, get_sql_results
 from superset.sqllab.command_status import SqlJsonExecutionStatus
 from superset.sqllab.commands.estimate import QueryEstimationCommand
 from superset.sqllab.commands.execute import CommandResult, ExecuteSqlCommand
+from superset.sqllab.commands.execute_new_query import run
 from superset.sqllab.commands.export import SqlResultExportCommand
 from superset.sqllab.commands.results import SqlExecutionResultsCommand
 from superset.sqllab.exceptions import (
@@ -48,6 +49,11 @@ from superset.sqllab.schemas import (
     QueryExecutionResponseSchema,
     sql_lab_get_results_schema,
     SQLLabBootstrapSchema,
+)
+from superset.sqllab.sql_executor import (
+    ASynchronousSqlExecutor,
+    SqlExecutor,
+    SynchronousSqlExecutor,
 )
 from superset.sqllab.sql_json_executer import (
     ASynchronousSqlJsonExecutor,
@@ -373,6 +379,9 @@ class SqlLabRestApi(BaseSupersetApi):
         execution_context: SqlJsonExecutionContext, log_params: Optional[dict[str, Any]]
     ) -> ExecuteSqlCommand:
         query_dao = QueryDAO()
+        sql_executor = SqlLabRestApi._create_sql_executor(
+            execution_context
+        )
         sql_json_executor = SqlLabRestApi._create_sql_json_executor(
             execution_context, query_dao
         )
@@ -386,6 +395,7 @@ class SqlLabRestApi(BaseSupersetApi):
             DatabaseDAO(),
             CanAccessQueryValidatorImpl(),
             SqlQueryRenderImpl(get_template_processor),
+            sql_executor,
             sql_json_executor,
             execution_context_convertor,
             config["SQLLAB_CTAS_NO_LIMIT"],
@@ -408,3 +418,18 @@ class SqlLabRestApi(BaseSupersetApi):
                 is_feature_enabled("SQLLAB_BACKEND_PERSISTENCE"),
             )
         return sql_json_executor
+
+    @staticmethod
+    def _create_sql_executor(
+        execution_context: SqlJsonExecutionContext
+    ) -> SqlExecutor:
+        sql_executor: SqlExecutor
+        if execution_context.is_run_asynchronous():
+            sql_executor = ASynchronousSqlExecutor(run)
+        else:
+            sql_executor = SynchronousSqlExecutor(
+                run,
+                config.get("SQLLAB_TIMEOUT"),
+                is_feature_enabled("SQLLAB_BACKEND_PERSISTENCE"),
+            )
+        return sql_executor

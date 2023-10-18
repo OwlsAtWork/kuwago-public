@@ -45,6 +45,7 @@ from superset.sqllab.limiting_factor import LimitingFactor
 if TYPE_CHECKING:
     from superset.daos.database import DatabaseDAO
     from superset.daos.query import QueryDAO
+    from superset.sqllab.sql_executor import SqlExecutor
     from superset.sqllab.sql_json_executer import SqlJsonExecutor
     from superset.sqllab.sqllab_execution_context import SqlJsonExecutionContext
 
@@ -60,6 +61,7 @@ class ExecuteSqlCommand(BaseCommand):
     _database_dao: DatabaseDAO
     _access_validator: CanAccessQueryValidator
     _sql_query_render: SqlQueryRender
+    _sql_executor: SqlExecutor
     _sql_json_executor: SqlJsonExecutor
     _execution_context_convertor: ExecutionContextConvertor
     _sqllab_ctas_no_limit: bool
@@ -73,6 +75,7 @@ class ExecuteSqlCommand(BaseCommand):
         database_dao: DatabaseDAO,
         access_validator: CanAccessQueryValidator,
         sql_query_render: SqlQueryRender,
+        sql_executor: SqlExecutor,
         sql_json_executor: SqlJsonExecutor,
         execution_context_convertor: ExecutionContextConvertor,
         sqllab_ctas_no_limit_flag: bool,
@@ -84,6 +87,7 @@ class ExecuteSqlCommand(BaseCommand):
         self._database_dao = database_dao
         self._access_validator = access_validator
         self._sql_query_render = sql_query_render
+        self._sql_executor = sql_executor
         self._sql_json_executor = sql_json_executor
         self._execution_context_convertor = execution_context_convertor
         self._sqllab_ctas_no_limit = sqllab_ctas_no_limit_flag
@@ -103,7 +107,14 @@ class ExecuteSqlCommand(BaseCommand):
                 self._execution_context.set_query(query)  # type: ignore
                 status = SqlJsonExecutionStatus.QUERY_ALREADY_CREATED
             else:
-                status = self._run_sql_json_exec_from_scratch()
+                query = self._execution_context.create_query()
+                self._save_new_query(query)
+                status = self._sql_executor.execute(
+                    self._execution_context,
+                    query.id,
+                    self._sqllab_ctas_no_limit,
+                    self._log_params)
+                # status = self._run_sql_json_exec_from_scratch()
 
             self._execution_context_convertor.set_payload(
                 self._execution_context, status
@@ -154,6 +165,9 @@ class ExecuteSqlCommand(BaseCommand):
         self._update_execution_context(database)
         query = self._execution_context.create_query()
         self._save_new_query(query)
+        # query = self._query_dao.find_by_id(id)
+        # query.sql = self._execution_context.sql
+        # self._query_dao.update(query, {"sql": query.sql})
         try:
             logger.info("Triggering query_id: %i", query.id)
 

@@ -316,26 +316,20 @@ class ParsedQuery:
 
     def is_explain(self) -> bool:
         # Remove comments
-        statements_without_comments = sqlparse.format(
-            self.stripped(), strip_comments=True
-        )
+        statements_without_comments = self.strip_comments()
 
         # Explain statements will only be the first statement
         return statements_without_comments.upper().startswith("EXPLAIN")
 
     def is_show(self) -> bool:
         # Remove comments
-        statements_without_comments = sqlparse.format(
-            self.stripped(), strip_comments=True
-        )
+        statements_without_comments = self.strip_comments()
         # Show statements will only be the first statement
         return statements_without_comments.upper().startswith("SHOW")
 
     def is_set(self) -> bool:
         # Remove comments
-        statements_without_comments = sqlparse.format(
-            self.stripped(), strip_comments=True
-        )
+        statements_without_comments = self.strip_comments()
         # Set statements will only be the first statement
         return statements_without_comments.upper().startswith("SET")
 

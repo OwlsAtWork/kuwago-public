@@ -930,6 +930,7 @@ class CeleryConfig:  # pylint: disable=too-few-public-methods
     worker_prefetch_multiplier = 1
     task_acks_late = False
     task_annotations = {
+        "execute_new_query.run": {"rate_limit": "100/s"},
         "sql_lab.get_sql_results": {"rate_limit": "100/s"},
         "email_reports.send": {
             "rate_limit": "1/s",
