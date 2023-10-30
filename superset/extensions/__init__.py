@@ -20,7 +20,7 @@ from typing import Any, Callable, Optional
 
 import celery
 from flask import Flask
-from flask_appbuilder import AppBuilder, SQLA
+from flask_appbuilder import AppBuilder
 from flask_caching.backends.base import BaseCache
 from flask_migrate import Migrate
 from flask_talisman import Talisman
@@ -29,6 +29,7 @@ from werkzeug.local import LocalProxy
 
 from superset.extensions.ssh import SSHManagerFactory
 from superset.extensions.stats_logger import BaseStatsLoggerManager
+from superset.multi_tenancy.sqla import MultiTenantSQLA
 from superset.utils.async_query_manager import AsyncQueryManager
 from superset.utils.cache_manager import CacheManager
 from superset.utils.encrypt import EncryptedFieldFactory
@@ -116,7 +117,7 @@ async_query_manager = AsyncQueryManager()
 cache_manager = CacheManager()
 celery_app = celery.Celery()
 csrf = CSRFProtect()
-db = SQLA()
+db = MultiTenantSQLA()
 _event_logger: dict[str, Any] = {}
 encrypted_field_factory = EncryptedFieldFactory()
 event_logger = LocalProxy(lambda: _event_logger.get("event_logger"))
