@@ -57,7 +57,8 @@ stats_logger = app.config["STATS_LOGGER"]
 
 REJECTED_FORM_DATA_KEYS: list[str] = []
 if not feature_flag_manager.is_feature_enabled("ENABLE_JAVASCRIPT_CONTROLS"):
-    REJECTED_FORM_DATA_KEYS = ["js_tooltip", "js_onclick_href", "js_data_mutator"]
+    REJECTED_FORM_DATA_KEYS = ["js_tooltip",
+                               "js_onclick_href", "js_data_mutator"]
 
 
 def sanitize_datasource_data(datasource_data: dict[str, Any]) -> dict[str, Any]:
@@ -188,7 +189,8 @@ def get_form_data(  # pylint: disable=too-many-locals
     if has_request_context():
         url_id = request.args.get("r")
         if url_id:
-            saved_url = db.session.query(models.Url).filter_by(id=url_id).first()
+            saved_url = db.session.query(
+                models.Url).filter_by(id=url_id).first()
             if saved_url:
                 url_str = parse.unquote_plus(
                     saved_url.url.split("?")[1][10:], encoding="utf-8"
@@ -198,7 +200,8 @@ def get_form_data(  # pylint: disable=too-many-locals
                 url_form_data.update(form_data)
                 form_data = url_form_data
 
-    form_data = {k: v for k, v in form_data.items() if k not in REJECTED_FORM_DATA_KEYS}
+    form_data = {k: v for k, v in form_data.items(
+    ) if k not in REJECTED_FORM_DATA_KEYS}
 
     # When a slice_id is present, load from DB and override
     # the form_data from the DB with the other form_data provided
@@ -313,7 +316,8 @@ def get_dashboard_extra_filters(
     slice_id: int, dashboard_id: int
 ) -> list[dict[str, Any]]:
     session = db.session()
-    dashboard = session.query(Dashboard).filter_by(id=dashboard_id).one_or_none()
+    dashboard = session.query(Dashboard).filter_by(
+        id=dashboard_id).one_or_none()
 
     # is chart in this dashboard?
     if (
@@ -327,7 +331,8 @@ def get_dashboard_extra_filters(
     try:
         # does this dashboard have default filters?
         json_metadata = json.loads(dashboard.json_metadata)
-        default_filters = json.loads(json_metadata.get("default_filters", "null"))
+        default_filters = json.loads(
+            json_metadata.get("default_filters", "null"))
         if not default_filters:
             return []
 
@@ -358,12 +363,14 @@ def build_extra_filters(  # pylint: disable=too-many-locals,too-many-nested-bloc
     # do not apply filters if chart is not in filter's scope or chart is immune to the
     # filter.
     for filter_id, columns in default_filters.items():
-        filter_slice = db.session.query(Slice).filter_by(id=filter_id).one_or_none()
+        filter_slice = db.session.query(
+            Slice).filter_by(id=filter_id).one_or_none()
 
         filter_configs: list[dict[str, Any]] = []
         if filter_slice:
             filter_configs = (
-                json.loads(filter_slice.params or "{}").get("filter_configs") or []
+                json.loads(filter_slice.params or "{}").get(
+                    "filter_configs") or []
             )
 
         scopes_by_filter_field = filter_scopes.get(filter_id, {})
@@ -372,7 +379,8 @@ def build_extra_filters(  # pylint: disable=too-many-locals,too-many-nested-bloc
                 continue
 
             current_field_scopes = scopes_by_filter_field.get(col, {})
-            scoped_container_ids = current_field_scopes.get("scope", ["ROOT_ID"])
+            scoped_container_ids = current_field_scopes.get("scope", [
+                                                            "ROOT_ID"])
             immune_slice_ids = current_field_scopes.get("immune", [])
 
             for container_id in scoped_container_ids:
@@ -473,7 +481,8 @@ def check_datasource_perms(
     :raises SupersetSecurityException: If the user cannot access the resource
     """
 
-    form_data = kwargs["form_data"] if "form_data" in kwargs else get_form_data()[0]
+    form_data = kwargs["form_data"] if "form_data" in kwargs else get_form_data()[
+        0]
 
     try:
         datasource_id, datasource_type = get_datasource_info(
@@ -545,7 +554,8 @@ def _deserialize_results_payload(
             ds_payload["selected_columns"], ds_payload["data"]
         )
         ds_payload.update(
-            {"data": data, "columns": all_columns, "expanded_columns": expanded_columns}
+            {"data": data, "columns": all_columns,
+                "expanded_columns": expanded_columns}
         )
 
         return ds_payload
@@ -555,11 +565,11 @@ def _deserialize_results_payload(
 
 
 def get_cta_schema_name(
-    database: Database, user: ab_models.User, schema: str, sql: str
+    database: Database, user: ab_models.User, schema: str, sql: Optional[str]
 ) -> Optional[str]:
-    func: Optional[Callable[[Database, ab_models.User, str, str], str]] = app.config[
-        "SQLLAB_CTAS_SCHEMA_NAME_FUNC"
-    ]
+    func: Optional[
+        Callable[[Database, ab_models.User, str, Optional[str]], str]
+    ] = app.config["SQLLAB_CTAS_SCHEMA_NAME_FUNC"]
     if not func:
         return None
     return func(database, user, schema, sql)

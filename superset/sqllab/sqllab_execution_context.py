@@ -44,7 +44,8 @@ SqlResults = dict[str, Any]
 class SqlJsonExecutionContext:  # pylint: disable=too-many-instance-attributes
     database_id: int
     schema: str
-    sql: str
+    sql: str | None
+    nl_query: str | None
     template_params: dict[str, Any]
     async_flag: bool
     limit: int
@@ -65,21 +66,27 @@ class SqlJsonExecutionContext:  # pylint: disable=too-many-instance-attributes
         self.database = None
         self._init_from_query_params(query_params)
         self.user_id = get_user_id()
-        self.client_id_or_short_id = cast(str, self.client_id or utils.shortid()[:10])
+        self.client_id_or_short_id = cast(
+            str, self.client_id or utils.shortid()[:10])
 
     def set_query(self, query: Query) -> None:
         self.query = query
+
+    def set_sql(self, sql: str) -> None:
+        self.sql = sql
 
     def _init_from_query_params(self, query_params: dict[str, Any]) -> None:
         self.database_id = cast(int, query_params.get("database_id"))
         self.schema = cast(str, query_params.get("schema"))
         self.sql = cast(str, query_params.get("sql"))
+        self.nl_query = cast(str, query_params.get("nlQuery"))
         self.template_params = self._get_template_params(query_params)
         self.async_flag = cast(bool, query_params.get("runAsync"))
         self.limit = self._get_limit_param(query_params)
         self.status = cast(str, query_params.get("status"))
         if cast(bool, query_params.get("select_as_cta")):
-            self.create_table_as_select = CreateTableAsSelect.create_from(query_params)
+            self.create_table_as_select = CreateTableAsSelect.create_from(
+                query_params)
         self.client_id = cast(str, query_params.get("client_id"))
         self.sql_editor_id = cast(str, query_params.get("sql_editor_id"))
         self.tab_name = cast(str, query_params.get("tab"))
@@ -92,7 +99,8 @@ class SqlJsonExecutionContext:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def _get_template_params(query_params: dict[str, Any]) -> dict[str, Any]:
         try:
-            template_params = json.loads(query_params.get("templateParams") or "{}")
+            template_params = json.loads(
+                query_params.get("templateParams") or "{}")
         except json.JSONDecodeError:
             logger.warning(
                 "Invalid template parameter %s" " specified. Defaulting to empty dict",
@@ -147,6 +155,7 @@ class SqlJsonExecutionContext:  # pylint: disable=too-many-instance-attributes
             return Query(
                 database_id=self.database_id,
                 sql=self.sql,
+                nl_query=self.nl_query,
                 schema=self.schema,
                 select_as_cta=True,
                 ctas_method=self.create_table_as_select.ctas_method,  # type: ignore
@@ -163,6 +172,7 @@ class SqlJsonExecutionContext:  # pylint: disable=too-many-instance-attributes
         return Query(
             database_id=self.database_id,
             sql=self.sql,
+            nl_query=self.nl_query,
             schema=self.schema,
             select_as_cta=False,
             start_time=start_time,
