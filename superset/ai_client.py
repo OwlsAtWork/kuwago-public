@@ -17,7 +17,8 @@ class AIClient:
     def sql(
         self, query: str, database_schema: str, database_type: Optional[str] = "sqlite3"
     ) -> str:
-        """Execute a SQL query and return the results."""
+        """Returns a SQL query after sending the prompt with NL query and
+        database schema to the AI service"""
         url = f"{self._base_url}{AIClient._SQL_URL_ENDPOINT}"
         data = {
             "query": query,

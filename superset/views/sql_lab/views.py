@@ -154,7 +154,7 @@ class TabStateView(BaseSupersetView):
             sql=query_editor.get("sql", "SELECT ..."),
             query_limit=query_editor.get("queryLimit"),
             hide_left_bar=query_editor.get("hideLeftBar"),
-            is_nlp_query=query_editor.get("isNlpQuery"),
+            is_nl_query=query_editor.get("isNlQuery"),
             saved_query_id=query_editor.get("remoteId"),
             template_params=query_editor.get("templateParams"),
         )

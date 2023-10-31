@@ -192,7 +192,7 @@ export const defaultQueryEditor = {
   remoteId: null,
   hideLeftBar: false,
   templateParams: '{}',
-  isNlpQuery: false,
+  isNlQuery: false,
 };
 
 export const extraQueryEditor1 = {

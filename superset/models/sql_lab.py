@@ -153,7 +153,7 @@ class Query(
             "ctas": self.select_as_cta,
             "serverId": self.id,
             "sql": self.sql,
-            "nl_query": self.nl_query,
+            "nlQuery": self.nl_query,
             "sqlEditorId": self.sql_editor_id,
             "startDttm": self.start_time,
             "state": self.status.lower(),
@@ -485,7 +485,7 @@ class TabState(Model, AuditMixinNullable, ExtraJSONMixin):
     autorun = Column(Boolean, default=False)
     template_params = Column(Text)
     hide_left_bar = Column(Boolean, default=False)
-    is_nlp_query = Column(Boolean, default=False)
+    is_nl_query = Column(Boolean, default=False)
 
     # any saved queries that are associated with the Tab State
     saved_query_id = Column(
@@ -508,10 +508,9 @@ class TabState(Model, AuditMixinNullable, ExtraJSONMixin):
             "autorun": self.autorun,
             "template_params": self.template_params,
             "hide_left_bar": self.hide_left_bar,
-            "is_nlp_query": self.is_nlp_query,
+            "is_nl_query": self.is_nl_query,
             "saved_query": self.saved_query.to_dict() if self.saved_query else None,
             "extra_json": self.extra,
-
         }
 
 

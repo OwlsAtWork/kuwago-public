@@ -58,7 +58,7 @@ export const QUERY_EDITOR_SET_TITLE = 'QUERY_EDITOR_SET_TITLE';
 export const QUERY_EDITOR_SET_AUTORUN = 'QUERY_EDITOR_SET_AUTORUN';
 export const QUERY_EDITOR_SET_SQL = 'QUERY_EDITOR_SET_SQL';
 export const QUERY_EDITOR_SET_QUERY_LIMIT = 'QUERY_EDITOR_SET_QUERY_LIMIT';
-export const QUERY_EDITOR_SET_IS_NLP_QUERY = 'QUERY_EDITOR_SET_IS_NLP_QUERY';
+export const QUERY_EDITOR_SET_IS_NL_QUERY = 'QUERY_EDITOR_SET_IS_NL_QUERY';
 export const QUERY_EDITOR_SET_TEMPLATE_PARAMS =
   'QUERY_EDITOR_SET_TEMPLATE_PARAMS';
 export const QUERY_EDITOR_SET_SELECTED_TEXT = 'QUERY_EDITOR_SET_SELECTED_TEXT';
@@ -404,8 +404,8 @@ export function runQueryFromSqlEditor(
   return function (dispatch, getState) {
     const qe = getUpToDateQuery(getState(), queryEditor, queryEditor.id);
     const sqlOrNlQuery = qe.selectedText || qe.sql;
-    const sql = qe.isNlpQuery ? undefined : sqlOrNlQuery;
-    const nlQuery = qe.isNlpQuery ? sqlOrNlQuery : undefined;
+    const sql = qe.isNlQuery ? undefined : sqlOrNlQuery;
+    const nlQuery = qe.isNlQuery ? sqlOrNlQuery : undefined;
     const query = {
       nlQuery,
       dbId: qe.dbId,
@@ -542,7 +542,6 @@ export function migrateQueryEditorFromLocalStorage(
 }
 
 export function addQueryEditor(queryEditor) {
-  console.log('queryEditor ', queryEditor);
   return function (dispatch) {
     const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.post({
@@ -591,7 +590,7 @@ export function addNewQueryEditor() {
     );
     const dbIds = Object.values(databases).map(database => database.id);
     const firstDbId = dbIds.length > 0 ? Math.min(...dbIds) : undefined;
-    const { dbId, schema, queryLimit, autorun, isNlpQuery } = {
+    const { dbId, schema, queryLimit, autorun, isNlQuery } = {
       ...queryEditors[0],
       ...activeQueryEditor,
       ...(unsavedQueryEditor.id === activeQueryEditor?.id &&
@@ -613,7 +612,7 @@ export function addNewQueryEditor() {
         sql: `${warning}SELECT ...`,
         queryLimit: queryLimit || common.conf.DEFAULT_SQLLAB_LIMIT,
         name,
-        isNlpQuery: isNlpQuery ?? false,
+        isNlQuery: isNlQuery ?? false,
       }),
     );
   };
@@ -633,7 +632,7 @@ export function cloneQueryToNewTab(query, autorun) {
       autorun,
       sql: query.sql,
       queryLimit: sourceQueryEditor.queryLimit,
-      isNlpQuery: sourceQueryEditor.isNlpQuery,
+      isNlQuery: sourceQueryEditor.isNlQuery,
       maxRow: sourceQueryEditor.maxRow,
       templateParams: sourceQueryEditor.templateParams,
     };
@@ -733,7 +732,7 @@ export function switchQueryEditor(queryEditor, displayLimit) {
               completed: false,
             },
             hideLeftBar: json.hide_left_bar,
-            isNlpQuery: json.is_nlp_query,
+            isNlQuery: json.is_nl_query,
           };
           dispatch(loadQueryEditor(loadedQueryEditor));
           dispatch(setTables(json.table_schemas || []));
@@ -790,27 +789,27 @@ export function toggleLeftBar(queryEditor) {
   };
 }
 
-export function toggleIsNlpQuery(queryEditor, updatedIsNlpQuery) {
+export function toggleIsNlQuery(queryEditor, updatedIsNlQuery) {
   return function (dispatch) {
     const sync = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? SupersetClient.put({
           endpoint: encodeURI(`/tabstateview/${queryEditor.id}`),
-          postPayload: { is_nlp_query: updatedIsNlpQuery },
+          postPayload: { is_nl_query: updatedIsNlQuery },
         })
       : Promise.resolve();
     return sync
       .then(() => {
         dispatch({
-          type: QUERY_EDITOR_SET_IS_NLP_QUERY,
+          type: QUERY_EDITOR_SET_IS_NL_QUERY,
           queryEditor,
-          isNlpQuery: updatedIsNlpQuery,
+          isNlQuery: updatedIsNlQuery,
         });
       })
       .catch(() =>
         dispatch(
           addDangerToast(
             t(
-              'An error occurred while setting the is nlp query. Please contact your administrator.',
+              'An error occurred while setting the NL query flag. Please contact your administrator.',
             ),
           ),
         ),

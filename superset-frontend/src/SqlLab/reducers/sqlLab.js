@@ -110,7 +110,7 @@ export default function sqlLabReducer(state = {}, action) {
         autorun: true,
         sql: action.query.sql,
         queryLimit: action.query.queryLimit,
-        isNlpQuery: action.query.isNlpQuery,
+        isNlQuery: action.query.isNlQuery,
         maxRow: action.query.maxRow,
       };
       const stateWithoutUnsavedState = {
@@ -548,13 +548,13 @@ export default function sqlLabReducer(state = {}, action) {
       };
     },
 
-    [actions.QUERY_EDITOR_SET_IS_NLP_QUERY]() {
+    [actions.QUERY_EDITOR_SET_IS_NL_QUERY]() {
       return {
         ...state,
         ...alterUnsavedQueryEditorState(
           state,
           {
-            isNlpQuery: action.isNlpQuery,
+            isNlQuery: action.isNlQuery,
           },
           action.queryEditor.id,
         ),

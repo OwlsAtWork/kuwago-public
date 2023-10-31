@@ -18,30 +18,30 @@
  */
 import React from 'react';
 import { useDispatch } from 'react-redux';
-import { toggleIsNlpQuery } from 'src/SqlLab/actions/sqlLab';
+import { toggleIsNlQuery } from 'src/SqlLab/actions/sqlLab';
 import useQueryEditor from 'src/SqlLab/hooks/useQueryEditor';
 import { Switch } from 'antd';
 
-export interface NlpQueryToggleProps {
+export interface NlQueryToggleProps {
   queryEditorId: string;
 }
 
-const NlpQueryToggle = ({ queryEditorId }: NlpQueryToggleProps) => {
+const NlQueryToggle = ({ queryEditorId }: NlQueryToggleProps) => {
   const dispatch = useDispatch();
 
-  const queryEditor = useQueryEditor(queryEditorId, ['id', 'isNlpQuery']);
-  const isNlpQuery = queryEditor?.isNlpQuery;
-  const setIsNlpQuery = (updatedIsNlpQuery: boolean) =>
-    dispatch(toggleIsNlpQuery(queryEditor, updatedIsNlpQuery));
+  const queryEditor = useQueryEditor(queryEditorId, ['id', 'isNlQuery']);
+  const isNlQuery = queryEditor?.isNlQuery;
+  const setIsNlQuery = (updatedIsNlQuery: boolean) =>
+    dispatch(toggleIsNlQuery(queryEditor, updatedIsNlQuery));
 
   return (
     <Switch
-      defaultChecked={isNlpQuery}
+      defaultChecked={isNlQuery}
       checkedChildren="NL"
       unCheckedChildren="SQL"
-      onChange={() => setIsNlpQuery(!isNlpQuery)}
+      onChange={() => setIsNlQuery(!isNlQuery)}
     />
   );
 };
 
-export default NlpQueryToggle;
+export default NlQueryToggle;

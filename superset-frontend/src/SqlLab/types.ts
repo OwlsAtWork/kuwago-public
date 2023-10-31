@@ -44,7 +44,7 @@ export interface QueryEditor {
   selectedText?: string;
   queryLimit?: number;
   description?: string;
-  isNlpQuery?: boolean;
+  isNlQuery?: boolean;
 }
 
 export type toastState = {
