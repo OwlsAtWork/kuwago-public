@@ -123,7 +123,8 @@ class SavedQueryViewApi(SavedQueryView):  # pylint: disable=too-many-ancestors
         "extra_json",
         "extra",
     ]
-    add_columns = ["label", "db_id", "schema", "description", "sql", "extra_json"]
+    add_columns = ["label", "db_id", "schema",
+                   "description", "sql", "extra_json"]
     edit_columns = add_columns
     show_columns = add_columns + ["id"]
 
@@ -153,6 +154,7 @@ class TabStateView(BaseSupersetView):
             sql=query_editor.get("sql", "SELECT ..."),
             query_limit=query_editor.get("queryLimit"),
             hide_left_bar=query_editor.get("hideLeftBar"),
+            is_nl_query=query_editor.get("isNlQuery"),
             saved_query_id=query_editor.get("remoteId"),
             template_params=query_editor.get("templateParams"),
         )
@@ -186,7 +188,8 @@ class TabStateView(BaseSupersetView):
         if _get_owner_id(tab_state_id) != get_user_id():
             return Response(status=403)
 
-        tab_state = db.session.query(TabState).filter_by(id=tab_state_id).first()
+        tab_state = db.session.query(
+            TabState).filter_by(id=tab_state_id).first()
         if tab_state is None:
             return Response(status=404)
         return json_success(

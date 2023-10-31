@@ -64,6 +64,7 @@ class ExecuteSqlCommand(BaseCommand):
     _execution_context_convertor: ExecutionContextConvertor
     _sqllab_ctas_no_limit: bool
     _log_params: dict[str, Any] | None = None
+    _get_sql_query: Any = None
 
     def __init__(
         self,
@@ -76,6 +77,7 @@ class ExecuteSqlCommand(BaseCommand):
         execution_context_convertor: ExecutionContextConvertor,
         sqllab_ctas_no_limit_flag: bool,
         log_params: dict[str, Any] | None = None,
+        get_sql_query: Any = None,
     ) -> None:
         self._execution_context = execution_context
         self._query_dao = query_dao
@@ -86,6 +88,7 @@ class ExecuteSqlCommand(BaseCommand):
         self._execution_context_convertor = execution_context_convertor
         self._sqllab_ctas_no_limit = sqllab_ctas_no_limit_flag
         self._log_params = log_params
+        self._get_sql_query = get_sql_query
 
     def validate(self) -> None:
         pass
@@ -120,7 +123,8 @@ class ExecuteSqlCommand(BaseCommand):
             # SupersetErrorsException || SupersetErrorsException
             raise ex
         except Exception as ex:
-            raise SqlLabException(self._execution_context, exception=ex) from ex
+            raise SqlLabException(self._execution_context,
+                                  exception=ex) from ex
 
     def _try_get_existing_query(self) -> Query | None:
         return self._query_dao.find_one_or_none(
@@ -128,6 +132,15 @@ class ExecuteSqlCommand(BaseCommand):
             user_id=self._execution_context.user_id,
             sql_editor_id=self._execution_context.sql_editor_id,
         )
+
+    def _update_execution_context(self, database: Database) -> None:
+        self._execution_context.set_database(database)
+        nl_query = self._execution_context.nl_query
+        if not nl_query:
+            return
+        database_schema = database.get_all_metadata()
+        sql = self._get_sql_query(nl_query, database_schema)
+        self._execution_context.set_sql(sql)
 
     @classmethod
     def is_query_handled(cls, query: Query | None) -> bool:
@@ -138,14 +151,16 @@ class ExecuteSqlCommand(BaseCommand):
         ]
 
     def _run_sql_json_exec_from_scratch(self) -> SqlJsonExecutionStatus:
-        self._execution_context.set_database(self._get_the_query_db())
+        database = self._get_the_query_db()
+        self._update_execution_context(database)
         query = self._execution_context.create_query()
         self._save_new_query(query)
         try:
             logger.info("Triggering query_id: %i", query.id)
 
             self._execution_context.set_query(query)
-            rendered_query = self._sql_query_render.render(self._execution_context)
+            rendered_query = self._sql_query_render.render(
+                self._execution_context)
             validate_rendered_query = copy.copy(query)
             validate_rendered_query.sql = rendered_query
             self._validate_access(validate_rendered_query)
@@ -161,7 +176,8 @@ class ExecuteSqlCommand(BaseCommand):
             raise ex
 
     def _get_the_query_db(self) -> Database:
-        mydb: Any = self._database_dao.find_by_id(self._execution_context.database_id)
+        mydb: Any = self._database_dao.find_by_id(
+            self._execution_context.database_id)
         self._validate_query_db(mydb)
         return mydb
 
@@ -191,7 +207,8 @@ class ExecuteSqlCommand(BaseCommand):
         try:
             self._access_validator.validate(query)
         except Exception as ex:
-            raise QueryIsForbiddenToAccessException(self._execution_context, ex) from ex
+            raise QueryIsForbiddenToAccessException(
+                self._execution_context, ex) from ex
 
     def _set_query_limit_if_required(
         self,

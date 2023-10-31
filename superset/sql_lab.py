@@ -38,6 +38,7 @@ from superset import (
     results_backend_use_msgpack,
     security_manager,
 )
+from superset.ai_client import AIClient
 from superset.common.db_query_status import QueryStatus
 from superset.constants import QUERY_CANCEL_KEY, QUERY_EARLY_CANCEL_KEY
 from superset.dataframe import df_to_records
@@ -116,7 +117,8 @@ def handle_query_error(
         query.set_extra_json_key("errors", errors_payload)
 
     session.commit()
-    payload.update({"status": query.status, "error": msg, "errors": errors_payload})
+    payload.update({"status": query.status, "error": msg,
+                   "errors": errors_payload})
     if troubleshooting_link := config["TROUBLESHOOTING_LINK"]:
         payload["link"] = troubleshooting_link
     return payload
@@ -127,7 +129,8 @@ def get_query_backoff_handler(details: dict[Any, Any]) -> None:
     logger.error(
         "Query with id `%s` could not be retrieved", str(query_id), exc_info=True
     )
-    stats_logger.incr("error_attempting_orm_query_{}".format(details["tries"] - 1))
+    stats_logger.incr(
+        "error_attempting_orm_query_{}".format(details["tries"] - 1))
     logger.error(
         "Query %s: Sleeping for a sec before retrying...", str(query_id), exc_info=True
     )
@@ -151,6 +154,12 @@ def get_query(query_id: int, session: Session) -> Query:
         return session.query(Query).filter_by(id=query_id).one()
     except Exception as ex:
         raise SqlLabException("Failed at getting query") from ex
+
+
+def get_sql_query(nl_query: str, database_schema: str) -> str:
+    """Returns the SQL query from the NL one"""
+    ai_client = AIClient()
+    return ai_client.sql(nl_query, database_schema)
 
 
 @celery_app.task(
@@ -226,7 +235,8 @@ def execute_sql_statement(  # pylint: disable=too-many-arguments,too-many-statem
     if not db_engine_spec.is_readonly_query(parsed_query) and not database.allow_dml:
         raise SupersetErrorException(
             SupersetError(
-                message=__("Only SELECT statements are allowed against this database."),
+                message=__(
+                    "Only SELECT statements are allowed against this database."),
                 error_type=SupersetErrorType.DML_NOT_ALLOWED_ERROR,
                 level=ErrorLevel.ERROR,
             )
@@ -389,7 +399,8 @@ def execute_sql_statements(
     """Executes the sql query returns the results."""
     if store_results and start_time:
         # only asynchronous queries
-        stats_logger.timing("sqllab.query.time_pending", now_as_float() - start_time)
+        stats_logger.timing("sqllab.query.time_pending",
+                            now_as_float() - start_time)
 
     query = get_query(query_id, session)
     payload: dict[str, Any] = dict(query_id=query_id)
@@ -411,11 +422,13 @@ def execute_sql_statements(
     if not db_engine_spec.run_multiple_statements_as_one:
         statements = parsed_query.get_statements()
         logger.info(
-            "Query %s: Executing %i statement(s)", str(query_id), len(statements)
+            "Query %s: Executing %i statement(s)", str(
+                query_id), len(statements)
         )
     else:
         statements = [rendered_query]
-        logger.info("Query %s: Executing query as a single statement", str(query_id))
+        logger.info(
+            "Query %s: Executing query as a single statement", str(query_id))
 
     logger.info("Query %s: Set query to 'running'", str(query_id))
     query.status = QueryStatus.RUNNING
@@ -516,7 +529,8 @@ def execute_sql_statements(
 
         # Commit the connection so CTA queries will create the table and any DML.
         should_commit = (
-            not db_engine_spec.is_select_query(parsed_query)  # check if query is DML
+            not db_engine_spec.is_select_query(
+                parsed_query)  # check if query is DML
             or apply_ctas
         )
         if should_commit:
@@ -559,7 +573,8 @@ def execute_sql_statements(
         key = str(uuid.uuid4())
         payload["query"]["resultsKey"] = key
         logger.info(
-            "Query %s: Storing results in results backend, key: %s", str(query_id), key
+            "Query %s: Storing results in results backend, key: %s", str(
+                query_id), key
         )
         with stats_timing("sqllab.query.results_backend_write", stats_logger):
             with stats_timing(
@@ -574,9 +589,11 @@ def execute_sql_statements(
 
             compressed = zlib_compress(serialized_payload)
             logger.debug(
-                "*** serialized payload size: %i", getsizeof(serialized_payload)
+                "*** serialized payload size: %i", getsizeof(
+                    serialized_payload)
             )
-            logger.debug("*** compressed payload size: %i", getsizeof(compressed))
+            logger.debug("*** compressed payload size: %i",
+                         getsizeof(compressed))
             results_backend.set(key, compressed, cache_timeout)
         query.results_key = key
 

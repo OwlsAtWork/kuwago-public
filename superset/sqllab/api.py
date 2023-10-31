@@ -30,7 +30,7 @@ from superset.daos.query import QueryDAO
 from superset.extensions import event_logger
 from superset.jinja_context import get_template_processor
 from superset.models.sql_lab import Query
-from superset.sql_lab import get_sql_results
+from superset.sql_lab import get_sql_query, get_sql_results
 from superset.sqllab.command_status import SqlJsonExecutionStatus
 from superset.sqllab.commands.estimate import QueryEstimationCommand
 from superset.sqllab.commands.execute import CommandResult, ExecuteSqlCommand
@@ -306,7 +306,8 @@ class SqlLabRestApi(BaseSupersetApi):
                 "user_agent": cast(Optional[str], request.headers.get("USER_AGENT"))
             }
             execution_context = SqlJsonExecutionContext(request.json)
-            command = self._create_sql_json_command(execution_context, log_params)
+            command = self._create_sql_json_command(
+                execution_context, log_params)
             command_result: CommandResult = command.run()
 
             response_status = (
@@ -320,7 +321,8 @@ class SqlLabRestApi(BaseSupersetApi):
             payload = {"errors": [ex.to_dict()]}
 
             response_status = (
-                403 if isinstance(ex, QueryIsForbiddenToAccessException) else ex.status
+                403 if isinstance(
+                    ex, QueryIsForbiddenToAccessException) else ex.status
             )
             return self.response(response_status, **payload)
 
@@ -346,6 +348,7 @@ class SqlLabRestApi(BaseSupersetApi):
             execution_context_convertor,
             config["SQLLAB_CTAS_NO_LIMIT"],
             log_params,
+            get_sql_query,
         )
 
     @staticmethod
@@ -354,7 +357,8 @@ class SqlLabRestApi(BaseSupersetApi):
     ) -> SqlJsonExecutor:
         sql_json_executor: SqlJsonExecutor
         if execution_context.is_run_asynchronous():
-            sql_json_executor = ASynchronousSqlJsonExecutor(query_dao, get_sql_results)
+            sql_json_executor = ASynchronousSqlJsonExecutor(
+                query_dao, get_sql_results)
         else:
             sql_json_executor = SynchronousSqlJsonExecutor(
                 query_dao,

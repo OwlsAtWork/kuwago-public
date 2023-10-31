@@ -162,7 +162,8 @@ class Database(
     """
         ),
     )
-    encrypted_extra = Column(encrypted_field_factory.create(Text), nullable=True)
+    encrypted_extra = Column(
+        encrypted_field_factory.create(Text), nullable=True)
     impersonate_user = Column(Boolean, default=False)
     server_cert = Column(encrypted_field_factory.create(Text), nullable=True)
     is_managed_externally = Column(Boolean, nullable=False, default=False)
@@ -216,10 +217,12 @@ class Database(
     @property
     def allows_cost_estimate(self) -> bool:
         extra = self.get_extra() or {}
-        cost_estimate_enabled: bool = extra.get("cost_estimate_enabled")  # type: ignore
+        cost_estimate_enabled: bool = extra.get(
+            "cost_estimate_enabled")  # type: ignore
 
         return (
-            self.db_engine_spec.get_allow_cost_estimate(extra) and cost_estimate_enabled
+            self.db_engine_spec.get_allow_cost_estimate(
+                extra) and cost_estimate_enabled
         )
 
     @property
@@ -478,7 +481,8 @@ class Database(
         )
 
         masked_url = self.get_password_masked_url(sqlalchemy_url)
-        logger.debug("Database._get_sqla_engine(). Masked URL: %s", str(masked_url))
+        logger.debug(
+            "Database._get_sqla_engine(). Masked URL: %s", str(masked_url))
 
         if self.impersonate_user:
             self.db_engine_spec.update_impersonation_config(
@@ -626,7 +630,8 @@ class Database(
 
     def compile_sqla_query(self, qry: Select, schema: str | None = None) -> str:
         with self.get_sqla_engine_with_context(schema) as engine:
-            sql = str(qry.compile(engine, compile_kwargs={"literal_binds": True}))
+            sql = str(qry.compile(
+                engine, compile_kwargs={"literal_binds": True}))
 
             # pylint: disable=protected-access
             if engine.dialect.identifier_preparer._double_percents:  # noqa
@@ -667,6 +672,21 @@ class Database(
 
     def safe_sqlalchemy_uri(self) -> str:
         return self.sqlalchemy_uri
+
+    @cache_util.memoized_func(
+        key="db:{self.id}:schema:all:table:all",
+        cache=cache_manager.cache,
+    )
+    def get_all_metadata(self, ssh_tunnel: SSHTunnel | None = None) -> str:
+        """Returns all tables from inspector."""
+        metadata_str = ""
+        schemas = self.get_all_schema_names(ssh_tunnel=ssh_tunnel)
+        for schema in schemas:
+            metadata_str += f"Schema: {schema}\n"
+            for table_name, _ in self.get_all_table_names_in_schema(schema):
+                table = self.get_table(table_name, schema)
+                metadata_str += f"{table.__repr__()}\n"
+        return metadata_str
 
     @cache_util.memoized_func(
         key="db:{self.id}:schema:{schema}:table_list",
@@ -864,7 +884,8 @@ class Database(
         self, table_name: str, schema: str | None = None
     ) -> dict[str, Any]:
         with self.get_inspector_with_context() as inspector:
-            pk_constraint = inspector.get_pk_constraint(table_name, schema) or {}
+            pk_constraint = inspector.get_pk_constraint(
+                table_name, schema) or {}
 
             def _convert(value: Any) -> Any:
                 try:
@@ -920,7 +941,8 @@ class Database(
     @perm.expression  # type: ignore
     def perm(cls) -> str:  # pylint: disable=no-self-argument
         return (
-            "[" + cls.database_name + "].(id:" + expression.cast(cls.id, String) + ")"
+            "[" + cls.database_name +
+            "].(id:" + expression.cast(cls.id, String) + ")"
         )
 
     def get_perm(self) -> str:
@@ -979,9 +1001,12 @@ class Database(
         return sqla_col
 
 
-sqla.event.listen(Database, "after_insert", security_manager.database_after_insert)
-sqla.event.listen(Database, "after_update", security_manager.database_after_update)
-sqla.event.listen(Database, "after_delete", security_manager.database_after_delete)
+sqla.event.listen(Database, "after_insert",
+                  security_manager.database_after_insert)
+sqla.event.listen(Database, "after_update",
+                  security_manager.database_after_update)
+sqla.event.listen(Database, "after_delete",
+                  security_manager.database_after_delete)
 
 
 class Log(Model):  # pylint: disable=too-few-public-methods

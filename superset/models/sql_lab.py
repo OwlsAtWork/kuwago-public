@@ -89,6 +89,7 @@ class Query(
     sql_editor_id = Column(String(256))
     schema = Column(String(256))
     sql = Column(Text)
+    nl_query = Column(Text)
     # Query to retrieve the results,
     # used only in case of select_as_cta_used is true.
     select_sql = Column(Text)
@@ -128,7 +129,8 @@ class Query(
     )
     user = relationship(security_manager.user_model, foreign_keys=[user_id])
 
-    __table_args__ = (sqla.Index("ti_user_id_changed_on", user_id, changed_on),)
+    __table_args__ = (sqla.Index(
+        "ti_user_id_changed_on", user_id, changed_on),)
 
     def get_template_processor(self, **kwargs: Any) -> BaseTemplateProcessor:
         return get_template_processor(query=self, database=self.database, **kwargs)
@@ -151,6 +153,7 @@ class Query(
             "ctas": self.select_as_cta,
             "serverId": self.id,
             "sql": self.sql,
+            "nlQuery": self.nl_query,
             "sqlEditorId": self.sql_editor_id,
             "startDttm": self.start_time,
             "state": self.status.lower(),
@@ -169,7 +172,8 @@ class Query(
         """Name property"""
         ts = datetime.now().isoformat()
         ts = ts.replace("-", "").replace(":", "").split(".")[0]
-        tab = self.tab_name.replace(" ", "_").lower() if self.tab_name else "notab"
+        tab = self.tab_name.replace(
+            " ", "_").lower() if self.tab_name else "notab"
         tab = re.sub(r"\W+", "", tab)
         return f"sqllab_{tab}_{ts}"
 
@@ -213,10 +217,12 @@ class Query(
         for col in self.columns:
             column_name = str(col.column_name or "")
             order_by_choices.append(
-                (json.dumps([column_name, True]), f"{column_name} " + __("[asc]"))
+                (json.dumps([column_name, True]),
+                 f"{column_name} " + __("[asc]"))
             )
             order_by_choices.append(
-                (json.dumps([column_name, False]), f"{column_name} " + __("[desc]"))
+                (json.dumps([column_name, False]),
+                 f"{column_name} " + __("[desc]"))
             )
 
         return {
@@ -479,6 +485,7 @@ class TabState(Model, AuditMixinNullable, ExtraJSONMixin):
     autorun = Column(Boolean, default=False)
     template_params = Column(Text)
     hide_left_bar = Column(Boolean, default=False)
+    is_nl_query = Column(Boolean, default=False)
 
     # any saved queries that are associated with the Tab State
     saved_query_id = Column(
@@ -501,6 +508,7 @@ class TabState(Model, AuditMixinNullable, ExtraJSONMixin):
             "autorun": self.autorun,
             "template_params": self.template_params,
             "hide_left_bar": self.hide_left_bar,
+            "is_nl_query": self.is_nl_query,
             "saved_query": self.saved_query.to_dict() if self.saved_query else None,
             "extra_json": self.extra,
         }
@@ -510,7 +518,8 @@ class TableSchema(Model, AuditMixinNullable, ExtraJSONMixin):
     __tablename__ = "table_schema"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tab_state_id = Column(Integer, ForeignKey("tab_state.id", ondelete="CASCADE"))
+    tab_state_id = Column(Integer, ForeignKey(
+        "tab_state.id", ondelete="CASCADE"))
 
     database_id = Column(
         Integer, ForeignKey("dbs.id", ondelete="CASCADE"), nullable=False

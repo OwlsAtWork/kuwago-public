@@ -40,6 +40,7 @@ const PERSISTENT_QUERY_EDITOR_KEYS = new Set([
   'templateParams',
   'name',
   'hideLeftBar',
+  'isNlQuery',
 ]);
 
 function shouldEmptyQueryResults(query) {
